@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('crud:server');
 var http = require('http');
+var { Server } = require('socket.io');
 
 /**
  * Get port from environment and store in Express.
@@ -20,6 +21,61 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+var io = new Server(server);
+
+// Basic 2-peer room signaling logic
+const roomIdToSockets = new Map();
+
+io.on('connection', (socket) => {
+  socket.on('join', (roomId) => {
+    if (!roomIdToSockets.has(roomId)) roomIdToSockets.set(roomId, new Set());
+    const members = roomIdToSockets.get(roomId);
+    if (members.size >= 2) {
+      socket.emit('full');
+      return;
+    }
+    members.add(socket.id);
+    socket.join(roomId);
+    if (members.size === 1) {
+      socket.emit('created', roomId);
+    } else if (members.size === 2) {
+      io.to(roomId).emit('ready');
+      socket.emit('joined', roomId);
+    }
+    socket.data.roomId = roomId;
+  });
+
+  socket.on('offer', ({ roomId, desc }) => {
+    socket.to(roomId).emit('offer', desc);
+  });
+
+  socket.on('answer', ({ roomId, desc }) => {
+    socket.to(roomId).emit('answer', desc);
+  });
+
+  socket.on('ice-candidate', ({ roomId, candidate }) => {
+    socket.to(roomId).emit('ice-candidate', candidate);
+  });
+
+  socket.on('leave', (roomId) => {
+    tryLeaveRoom(socket, roomId);
+  });
+
+  socket.on('disconnect', () => {
+    const roomId = socket.data.roomId;
+    if (roomId) tryLeaveRoom(socket, roomId);
+  });
+});
+
+function tryLeaveRoom(socket, roomId) {
+  socket.leave(roomId);
+  const members = roomIdToSockets.get(roomId);
+  if (members) {
+    members.delete(socket.id);
+    io.to(roomId).emit('peer-left');
+    if (members.size === 0) roomIdToSockets.delete(roomId);
+  }
+}
 
 /**
  * Listen on provided port, on all network interfaces.
