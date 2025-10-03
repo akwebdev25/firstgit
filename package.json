@@ -16,7 +16,9 @@
     "method-override": "^3.0.0",
     "morgan": "~1.9.1",
     "mysql": "^2.18.1",
-    "nodemon": "^2.0.12"
+    "nodemon": "^2.0.12",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   },
   "description": "Tutorial Link: [Node.js Simple CRUD with Express.js and MySQL](https://www.mynotepaper.com/nodejs-simple-crud-with-expressjs-and-mysql.html)",
   "main": "app.js",

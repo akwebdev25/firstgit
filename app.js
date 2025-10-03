@@ -12,6 +12,7 @@ var connection  = require('./lib/db');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var booksRouter = require('./routes/books');
+var webrtcRouter = require('./routes/webrtc');
 
 var app = express();
 
@@ -38,6 +39,7 @@ app.use(flash());
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/books', booksRouter);
+app.use('/webrtc', webrtcRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
